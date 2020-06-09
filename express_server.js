@@ -26,8 +26,20 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
+function generateRandomString(longURL) {
+  let shortURL = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let charactersLength = characters.length;
+  let length = 6;
+  for ( let i = 0; i < length; i++ ) {
+    shortURL += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  urlDatabase[shortURL] = longURL;
+};
+
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
+  console.log(req.body.longURL);  // Log the POST request body to the console
+  generateRandomString(req.body.longURL);
   res.send("Ok");         // Respond with 'Ok' (we will replace this)
 });
 app.get("/hello", (req, res) => {
