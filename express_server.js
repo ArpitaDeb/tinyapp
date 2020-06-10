@@ -13,7 +13,7 @@ const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
-
+//users database
 const users = { 
   "userRandomID": {
     id: "userRandomID", 
@@ -25,7 +25,7 @@ const users = {
     email: "user2@example.com", 
     password: "dishwasher-funk"
   }
-}
+};
 //function to generate shortURL
 function generateRandomString() {
   let shortURL = '';
@@ -106,12 +106,34 @@ app.post('/logout', (req, res) => {
   res.clearCookie('username', req.cookies.username);
   res.redirect('/urls');
 });
+
 //Display the register form
 app.get('/register', (req, res) => {
   let templateVars = {
     username: req.cookies["username"],
   };
   res.render('urls_register', templateVars);
+});
+const addNewUser = (email, password) => {
+  const userId = generateRandomString();
+  const newUser = {
+    id: userId,
+    email,
+    password
+  };
+  users[userId] = newUser;
+  return userId;
+};
+// Handling the register form
+app.post('/register', (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const userId = addNewUser(email, password);
+
+  // Setting the cookie in the user's browser
+  res.cookie('user_id', userId);
+  console.log(users[userId]);
+  res.redirect('/urls');
 });
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
