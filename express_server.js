@@ -20,6 +20,10 @@ function generateRandomString() {
   }
   return shortURL;
 };
+
+const updateURL = (shortURL, updatedURL) => {
+  urlDatabase[shortURL] = updatedURL;
+}
 //Routes
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -46,6 +50,14 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
+//update the URL
+app.post("/urls/:shortURL", (req, res) => {
+  let shortURL = req.params.shortURL;
+  let updatedURL = req.body.newURL;
+  updateURL(shortURL, updatedURL);
+  res.redirect('/urls');
+});
+
 //redirect url
 app.post("/urls", (req, res) => {
   let longURL = req.body.longURL;  // Log the POST request body to the console
@@ -53,6 +65,9 @@ app.post("/urls", (req, res) => {
   urlDatabase[shortURL] = longURL;
   res.redirect(`/urls/${shortURL}`);
 });
+
+//display the update form
+
 //delete an URL
 app.post("/urls/:shortURL/delete", (req, res) => {
   let shortURL = req.params.shortURL;
