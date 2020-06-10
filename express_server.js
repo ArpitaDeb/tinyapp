@@ -1,15 +1,31 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
+
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 app.set("view engine", "ejs");
+
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
 //function to generate shortURL
 function generateRandomString() {
   let shortURL = '';
@@ -90,7 +106,13 @@ app.post('/logout', (req, res) => {
   res.clearCookie('username', req.cookies.username);
   res.redirect('/urls');
 });
-
+//Display the register form
+app.get('/register', (req, res) => {
+  let templateVars = {
+    username: req.cookies["username"],
+  };
+  res.render('urls_register', templateVars);
+});
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
