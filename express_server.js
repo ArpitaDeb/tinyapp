@@ -14,15 +14,15 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 //users database
-const users = { 
+const users = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: "purple-monkey-dinosaur"
   },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "dishwasher-funk"
   }
 };
@@ -47,10 +47,10 @@ app.get("/urls.json", (req, res) => {
 });
 //render index template
 app.get("/urls", (req, res) => {
-  let templateVars = { 
-  user : users[req.cookies["user_id"]], 
-  urls: urlDatabase
-};
+  let templateVars = {
+    user: users[req.cookies["user_id"]],
+    urls: urlDatabase
+  };
   res.render("urls_index", templateVars);
 });
 app.get("/urls/new", (req, res) => {
@@ -98,17 +98,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
-//login form
-app.post('/login', (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
-});
-
-//logout form
-app.post('/logout', (req, res) => {
-  res.clearCookie('username', req.cookies.username);
-  res.redirect('/urls');
-});
 
 //Display the register form
 app.get('/register', (req, res) => {
@@ -131,12 +120,46 @@ const addNewUser = (email, password) => {
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userId = addNewUser(email, password);
+  const user = findUserByEmail(email);
+  if (email === '' || password === '') {
+    return res.status(400).send('User data is invalid!');
+  } else if (!user) {
+    const userId = addNewUser(email, password);
+    // Setting the cookie in the user's browser
+    res.cookie('user_id', userId);
+    res.redirect('/urls');
+  } else {
+    res.status(400).send('User is already registered!');
+  }
+});
 
-  // Setting the cookie in the user's browser
-  res.cookie('user_id', userId);
+//handle Registration Errors by findUserByEmail function
+const findUserByEmail = (email) => {
+  for (let userId in users) {
+    if (users[userId].email === email) {
+      return true;
+    }
+  } return false;
+};
+// Display the login form
+
+app.get('/login', (req, res) => {
+  const templateVars = { user: null };
+  res.render('urls_login', templateVars);
+});
+
+//login form
+app.post('/login', (req, res) => {
+  res.cookie('user_id');
   res.redirect('/urls');
 });
+
+//logout form
+app.post('/logout', (req, res) => {
+  res.clearCookie('user_id');
+  res.redirect('/urls');
+});
+
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });

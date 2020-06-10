@@ -12,18 +12,14 @@
       </div>
     </div>
     <span class="d-flex justify-content-end">
-      <% if (!user) { %>
-      <form action="/login" method="POST">
-        <label for="user"></label>
-        <input type="text" name="username" placeholder="username">
-        <button type="submit" class="btn btn-success">Login</button>
-      </form>
-      <% } else { %>
-      <form action="/logout" method="POST">
-        <label for="user"></label>
-        <a class="navbar-brand" href="/urls"><%= `Signed in user: ${user.email}` %></a>
+        <% if (!user) { %>
+        <a class="navbar-brand" href='/login'>Login</a>
+        <a class="navbar-brand" href='/register'>Register</a>
+        <% } else { %>
+        <a class="navbar-brand" href="/urls"><%= user.email %></a>
+        <form action="/logout" method="POST"></form>
         <button type="submit" class="btn btn-success">Logout</button>
-      </form>
+        </form>
       <% } %>
     </span>
   </nav>
