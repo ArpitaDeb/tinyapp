@@ -3,7 +3,8 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 app.set("view engine", "ejs");
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -21,9 +22,6 @@ function generateRandomString() {
   return shortURL;
 };
 
-const updateURL = (shortURL, updatedURL) => {
-  urlDatabase[shortURL] = updatedURL;
-}
 //Routes
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -33,11 +31,14 @@ app.get("/urls.json", (req, res) => {
 });
 //render index template
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 });
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = {
+    username: req.cookies["username"],
+  };
+  res.render("urls_new", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -47,14 +48,18 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  let templateVars = { 
+    username: req.cookies["username"],
+    shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL] 
+  };
   res.render("urls_show", templateVars);
 });
 //update the URL
 app.post("/urls/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  let updatedURL = req.body.newURL;
-  updateURL(shortURL, updatedURL);
+  let longURL = req.body.newURL;
+  urlDatabase[shortURL] = longURL;
   res.redirect('/urls');
 });
 
@@ -73,6 +78,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect("/urls");
+});
+//login form
+app.post('/login', (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
 });
 
 app.get("/hello", (req, res) => {
