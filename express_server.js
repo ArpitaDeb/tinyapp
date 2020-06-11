@@ -55,7 +55,7 @@ app.get("/", (req, res) => {
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-//render index template
+//render list of all shortURL and associated long URL created by current user
 app.get("/urls", (req, res) => {
   let loggeduserId = [req.cookies["user_id"]];
   let templateVars = {
@@ -78,23 +78,44 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-//redirect users to visit the short URLs even if they aren't logged in
+//Redirect any request to "/u/:shortURL" to its longURL even if they aren't logged in
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
   let longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
-
+//Render information about a single URL.
 app.get("/urls/:shortURL", (req, res) => {
+  let loggeduserId = req.cookies["user_id"];
+  console.log(loggeduserId);
+  if (!urlDatabase[req.params.shortURL]) {
+    console.log([req.params.shortURL]);
+    res.redirect('/urls');
+    return;
+  }
+  let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
+  console.log(urlDatabase[req.params.shortURL].userID);
+
   let templateVars = {
-    user: users[req.cookies["user_id"]],
+    user: users[loggeduserId],
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL].longURL
+    longURL: urlDatabase[req.params.shortURL].longURL,
+    isOwnerCreator
   };
   res.render("urls_show", templateVars);
 });
 //update the URL
 app.post("/urls/:shortURL", (req, res) => {
+  if (!urlDatabase[req.params.shortURL]) {
+    res.redirect('/urls');
+    return;
+  }
+  let loggeduserId = req.cookies["user_id"];
+  let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
+  if (!isOwnerCreator) {
+    res.status(400).send('Error: cannot delete another creator\'s URL');
+    return;
+  }
   let shortURL = req.params.shortURL;
   let updatedlongURL = req.body.newURL;
   urlDatabase[shortURL].longURL = updatedlongURL;
@@ -106,7 +127,7 @@ app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(req.body.longURL);
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userId: req.cookies['user_id']
+    userID: req.cookies['user_id']
   };
   res.redirect(`/urls/${shortURL}`);
 });
@@ -115,7 +136,13 @@ app.post("/urls", (req, res) => {
 
 //delete an URL
 app.post("/urls/:shortURL/delete", (req, res) => {
+  let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
+  let loggeduserId = req.cookies['user_id'];
   let shortURL = req.params.shortURL;
+  if (!isOwnerCreator) {
+    res.status(400).send('Error: cannot delete another creator\'s URL');
+    return;
+  }
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
@@ -128,14 +155,14 @@ app.get('/register', (req, res) => {
   res.render('urls_register', templateVars);
 });
 const addNewUser = (email, password) => {
-  const userId = generateRandomString();
+  const userID = generateRandomString();
   const newUser = {
-    id: userId,
+    id: userID,
     email,
     password
   };
-  users[userId] = newUser;
-  return userId;
+  users[userID] = newUser;
+  return userID;
 };
 // Handling the register form
 app.post('/register', (req, res) => {
@@ -146,9 +173,9 @@ app.post('/register', (req, res) => {
     res.status(400).send('User data is invalid!');
     return;
   } else if (!user) {
-    const userId = addNewUser(email, password);
+    const userID = addNewUser(email, password);
     // Setting the cookie in the user's browser
-    res.cookie('user_id', userId);
+    res.cookie('user_id', userID);
     res.redirect('/urls');
   } else {
     res.status(400).send('already registered, please login');
@@ -159,9 +186,9 @@ app.post('/register', (req, res) => {
 
 //handle Registration Errors by findUserByEmail function
 const findUserByEmail = (email) => {
-  for (let userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
+  for (let userID in users) {
+    if (users[userID].email === email) {
+      return users[userID];
     }
   } return false;
 };
@@ -192,34 +219,21 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 })
 
-//user login authentication
-
-  /* unable to make it work for all login functionality if (!findUserByEmail(email)) {
-    res.status(403).send('Email is not registered');
-  }
-  else if (!authenticateUser(email, password)) {
-    // user is not authenticated => error message
-    res.status(403).send('Wrong credentials');
-  } else {
-    res.cookie('user_id', userId);
-    res.redirect('/urls');
-  }
-  */
-  //authenticates the user with the helper Fn
-  app.post('/login', (req, res) => {
-    const email = req.body.email;
-    const password = req.body.password;
-  const userId = authenticateUser(email, password);
+//user login authentication N authenticates the user with the helper Fn
+app.post('/login', (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const userID = authenticateUser(email, password);
   if (!findUserByEmail(email)) {
     res.status(403).send('Email is not registered');
     return;
     //return res.redirect('/register');
   }
-  else if (!userId) {
+  else if (!userID) {
     res.status(403).send('You have provided invalid credentials');
     return;
   } else {
-    res.cookie("user_id", userId);
+    res.cookie("user_id", userID);
     res.redirect("/urls");
   }
 });

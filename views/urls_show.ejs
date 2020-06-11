@@ -18,6 +18,15 @@
       </div>
     </div>
   </main>
+  <% } else if (!isOwnerCreator){ %>
+  <main style="margin: 1em;">
+    <div class="card text-center">
+      <div class="card-body">
+        <p>PLease create your own URL <a href="/urls/new">New URL Creation</a></p>
+      </div>
+    </div>
+  </main>
+
   <% } else { %>
   <main>
     <div class="card text-center">
