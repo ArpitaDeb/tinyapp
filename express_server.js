@@ -55,6 +55,7 @@ app.get("/urls", (req, res) => {
 });
 app.get("/urls/new", (req, res) => {
   let templateVars = {
+    urls: urlDatabase,
     user: users[req.cookies["user_id"]],
   };
   res.render("urls_new", templateVars);
@@ -103,7 +104,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.get('/register', (req, res) => {
   let templateVars = {
     user: users[req.cookies["user_id"]],
-    urls: urlDatabase
   };
   res.render('urls_register', templateVars);
 });
@@ -130,7 +130,7 @@ app.post('/register', (req, res) => {
     res.cookie('user_id', userId);
     res.redirect('/urls');
   } else {
-    res.status(400).send('User is already registered!');
+    res.status(400).send('already registered, please login');
   }
 });
 
@@ -138,7 +138,7 @@ app.post('/register', (req, res) => {
 const findUserByEmail = (email) => {
   for (let userId in users) {
     if (users[userId].email === email) {
-      return true;
+      return users[userId];
     }
   } return false;
 };
@@ -154,37 +154,49 @@ const authenticateUser = (email, password) => {
 // Display the login form
 
 app.get('/login', (req, res) => {
-  const templateVars = { 
-    user: users[req.cookies["user_id"]] ,
-    urls: urlDatabase 
+  let templateVars = {
+    user: null
+    //user: users[req.cookies["user_id"]],
+    //urls: urlDatabase
   };
   res.render('urls_login', templateVars);
 });
+//logout form
+app.post('/logout', (req, res) => {
+  // clear the cookie
+  res.clearCookie('user_id');
+  // res.cookie("user_id", null);
+  res.redirect('/urls');
+})
 
 //user login authentication
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userId = authenticateUser(email, password);
-
-  if (userId) {
-  res.cookie('user_id', userId);
-  res.redirect('/urls');
-  } else {
+  /* unable to make it work for all login functionality if (!findUserByEmail(email)) {
+    res.status(403).send('Email is not registered');
+  }
+  else if (!authenticateUser(email, password)) {
     // user is not authenticated => error message
     res.status(403).send('Wrong credentials');
+  } else {
+    res.cookie('user_id', userId);
+    res.redirect('/urls');
+  }
+  */
+  //authenticates the user with the helper Fn
+  const userId = authenticateUser(email, password);
+  if (!findUserByEmail(email)) {
+    res.status(403).send('Email is not registered');
+  }
+  else if (!userId) {
+    res.status(403).send('You have provided invalid credentials');
+  } else {
+    res.cookie("user_id", userId);
+    res.redirect("/urls");
   }
 });
 
-//logout form
-app.post('/logout', (req, res) => {
-
-  // clear the cookie
-  res.clearCookie('user_id');
-  // res.cookie("user_id", null);
-
-  res.redirect('/urls');
-})
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });

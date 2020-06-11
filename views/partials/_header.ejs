@@ -14,7 +14,7 @@
     <span class="d-flex justify-content-end">
       <% if(user) { %>
       <a class="navbar-brand" href="/urls"><%= user.email %></a>
-      <form action="/logout" method="POST"></form>
+      <form action="/logout" method="POST">
       <button type="logout" class="btn btn-success">Logout</button>
       </form>
       <% } else { %>
