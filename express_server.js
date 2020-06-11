@@ -21,12 +21,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", salt)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", salt)
   }
 };
 
@@ -64,7 +64,6 @@ app.get("/urls", (req, res) => {
     user: users[loggeduserId],
     urls: urlsForUser(loggeduserId),
   };
-  console.log(templateVars.urls);
   res.render("urls_index", templateVars);
 });
 
@@ -163,7 +162,7 @@ const addNewUser = (email, password) => {
   const newUser = {
     id: userID,
     email,
-    password
+    password: bcrypt.hashSync(password, salt)
   };
   users[userID] = newUser;
   return userID;
@@ -200,7 +199,7 @@ const findUserByEmail = (email) => {
 const authenticateUser = (email, password) => {
   // loop through the users db => object
   const user = findUserByEmail(email);
-  if (user && user.password === password) {
+  if (user &&  bcrypt.compareSync(password, user.password)) {
     return user.id;
   }
   return false;
