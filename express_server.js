@@ -103,6 +103,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.get('/register', (req, res) => {
   let templateVars = {
     user: users[req.cookies["user_id"]],
+    urls: urlDatabase
   };
   res.render('urls_register', templateVars);
 });
@@ -141,25 +142,49 @@ const findUserByEmail = (email) => {
     }
   } return false;
 };
+//User Authentication
+const authenticateUser = (email, password) => {
+  // loop through the users db => object
+  const user = findUserByEmail(email);
+  if (user && user.password === password) {
+    return user.id;
+  }
+  return false;
+}
 // Display the login form
 
 app.get('/login', (req, res) => {
-  const templateVars = { user: null };
+  const templateVars = { 
+    user: users[req.cookies["user_id"]] ,
+    urls: urlDatabase 
+  };
   res.render('urls_login', templateVars);
 });
 
-//login form
+//user login authentication
 app.post('/login', (req, res) => {
-  res.cookie('user_id');
+  const email = req.body.email;
+  const password = req.body.password;
+  const userId = authenticateUser(email, password);
+
+  if (userId) {
+  res.cookie('user_id', userId);
   res.redirect('/urls');
+  } else {
+    // user is not authenticated => error message
+    res.status(403).send('Wrong credentials');
+  }
 });
 
 //logout form
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
-  res.redirect('/urls');
-});
 
+  // clear the cookie
+  res.clearCookie('user_id');
+  // res.cookie("user_id", null);
+
+  res.redirect('/urls');
+})
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
