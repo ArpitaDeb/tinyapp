@@ -10,8 +10,8 @@ app.use(cookieParser());
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 //users database
 const users = {
@@ -53,17 +53,22 @@ app.get("/urls", (req, res) => {
   };
   res.render("urls_index", templateVars);
 });
+//render new template
 app.get("/urls/new", (req, res) => {
+  //extracting cookie to see if user is logged in
+  if (![req.cookies["user_id"]]) {
+    res.redirect('/login');
+    return;
+  }
   let templateVars = {
-    urls: urlDatabase,
     user: users[req.cookies["user_id"]],
   };
   res.render("urls_new", templateVars);
 });
-
+//redirect users to visit the short URLs even if they aren't logged in
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  let longURL = urlDatabase[shortURL];
+  let longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
 
@@ -71,23 +76,25 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = {
     user: users[req.cookies["user_id"]],
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL]
+    longURL: urlDatabase[req.params.shortURL].longURL
   };
   res.render("urls_show", templateVars);
 });
 //update the URL
 app.post("/urls/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  let longURL = req.body.newURL;
-  urlDatabase[shortURL] = longURL;
+  let updatedlongURL = req.body.newURL;
+  urlDatabase[shortURL].longURL = updatedlongURL;
   res.redirect('/urls');
 });
 
-//redirect url
+//redirect url depending on structure of uRLDatabase keeping shortURL as key,
 app.post("/urls", (req, res) => {
-  let longURL = req.body.longURL;  // Log the POST request body to the console
   let shortURL = generateRandomString(req.body.longURL);
-  urlDatabase[shortURL] = longURL;
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userId: req.cookies['user_id']
+  };
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -123,7 +130,8 @@ app.post('/register', (req, res) => {
   const password = req.body.password;
   const user = findUserByEmail(email);
   if (email === '' || password === '') {
-    return res.status(400).send('User data is invalid!');
+    res.status(400).send('User data is invalid!');
+    return;
   } else if (!user) {
     const userId = addNewUser(email, password);
     // Setting the cookie in the user's browser
@@ -131,6 +139,8 @@ app.post('/register', (req, res) => {
     res.redirect('/urls');
   } else {
     res.status(400).send('already registered, please login');
+    return;
+    //return res.redirect('/login');
   }
 });
 
@@ -188,9 +198,12 @@ app.post('/login', (req, res) => {
   const userId = authenticateUser(email, password);
   if (!findUserByEmail(email)) {
     res.status(403).send('Email is not registered');
+    return;
+    //return res.redirect('/register');
   }
   else if (!userId) {
     res.status(403).send('You have provided invalid credentials');
+    return;
   } else {
     res.cookie("user_id", userId);
     res.redirect("/urls");
