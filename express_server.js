@@ -13,6 +13,7 @@ const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
+
 //users database
 const users = {
   "userRandomID": {
@@ -26,6 +27,7 @@ const users = {
     password: "dishwasher-funk"
   }
 };
+
 //function to generate shortURL
 function generateRandomString() {
   let shortURL = '';
@@ -37,7 +39,15 @@ function generateRandomString() {
   }
   return shortURL;
 };
-
+//function returns the filtered URLs where the userID is equal to the logged id
+const urlsForUser = (loggeduserId) => {
+  let filterURL = {};
+  for (let shortURL in urlDatabase) {
+    if ((urlDatabase[shortURL].userID) === loggeduserId) {
+      filterURL[shortURL] = urlDatabase[shortURL];
+    }
+  } return filterURL;
+};
 //Routes
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -47,12 +57,14 @@ app.get("/urls.json", (req, res) => {
 });
 //render index template
 app.get("/urls", (req, res) => {
+  let loggeduserId = [req.cookies["user_id"]];
   let templateVars = {
-    user: users[req.cookies["user_id"]],
-    urls: urlDatabase
+    user: users[loggeduserId],
+    urls: urlsForUser(loggeduserId)
   };
   res.render("urls_index", templateVars);
 });
+
 //render new template
 app.get("/urls/new", (req, res) => {
   //extracting cookie to see if user is logged in
@@ -65,6 +77,7 @@ app.get("/urls/new", (req, res) => {
   };
   res.render("urls_new", templateVars);
 });
+
 //redirect users to visit the short URLs even if they aren't logged in
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
@@ -180,9 +193,7 @@ app.post('/logout', (req, res) => {
 })
 
 //user login authentication
-app.post('/login', (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+
   /* unable to make it work for all login functionality if (!findUserByEmail(email)) {
     res.status(403).send('Email is not registered');
   }
@@ -195,6 +206,9 @@ app.post('/login', (req, res) => {
   }
   */
   //authenticates the user with the helper Fn
+  app.post('/login', (req, res) => {
+    const email = req.body.email;
+    const password = req.body.password;
   const userId = authenticateUser(email, password);
   if (!findUserByEmail(email)) {
     res.status(403).send('Email is not registered');
