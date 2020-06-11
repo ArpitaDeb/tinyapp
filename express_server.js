@@ -4,6 +4,8 @@ const PORT = 8080; // default port 8080
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
+const bcrypt = require('bcrypt');
+const salt = 10;
 
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
@@ -57,11 +59,12 @@ app.get("/urls.json", (req, res) => {
 });
 //render list of all shortURL and associated long URL created by current user
 app.get("/urls", (req, res) => {
-  let loggeduserId = [req.cookies["user_id"]];
+  let loggeduserId = req.cookies["user_id"];
   let templateVars = {
     user: users[loggeduserId],
-    urls: urlsForUser(loggeduserId)
+    urls: urlsForUser(loggeduserId),
   };
+  console.log(templateVars.urls);
   res.render("urls_index", templateVars);
 });
 
@@ -87,7 +90,7 @@ app.get("/u/:shortURL", (req, res) => {
 //Render information about a single URL.
 app.get("/urls/:shortURL", (req, res) => {
   let loggeduserId = req.cookies["user_id"];
-  console.log(loggeduserId);
+
   if (!urlDatabase[req.params.shortURL]) {
     console.log([req.params.shortURL]);
     res.redirect('/urls');
@@ -113,12 +116,13 @@ app.post("/urls/:shortURL", (req, res) => {
   let loggeduserId = req.cookies["user_id"];
   let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
   if (!isOwnerCreator) {
-    res.status(400).send('Error: cannot delete another creator\'s URL');
+    res.status(400).send('Error: cannot edit another creator\'s URL');
     return;
   }
   let shortURL = req.params.shortURL;
   let updatedlongURL = req.body.newURL;
   urlDatabase[shortURL].longURL = updatedlongURL;
+  console.log(shortURL, updatedlongURL, urlDatabase[shortURL]);
   res.redirect('/urls');
 });
 
@@ -136,8 +140,8 @@ app.post("/urls", (req, res) => {
 
 //delete an URL
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
   let loggeduserId = req.cookies['user_id'];
+  let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
   let shortURL = req.params.shortURL;
   if (!isOwnerCreator) {
     res.status(400).send('Error: cannot delete another creator\'s URL');
