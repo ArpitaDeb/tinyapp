@@ -5,6 +5,8 @@ const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
 
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 //Encrypted cookies
 const cookieSession = require('cookie-session');
 app.use(cookieSession({
@@ -12,7 +14,11 @@ app.use(cookieSession({
   keys: ['f080ac7b-b838-4c5f-a1f4-b0a9fee10130', 'c3fb18be-448b-4f6e-a377-49373e9b7e1a']
 }))
 app.set("view engine", "ejs");
-const { findUserByEmail, addNewUser, authenticateUser, generateRandomString, urlsForUser } = require('./helpers.js');
+const { findUserByEmail,
+  addNewUser,
+  authenticateUser,
+  generateRandomString,
+  urlsForUser } = require('./helpers.js');
 
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
@@ -47,9 +53,6 @@ app.get("/urls", (req, res) => {
     user: users[loggeduserId],
     urls: urlsForUser(loggeduserId, urlDatabase)
   };
-  console.log('string1', templateVars.urls);
-  console.log('string2', urlDatabase);
-
   res.render("urls_index", templateVars);
 });
 
@@ -77,12 +80,10 @@ app.get("/urls/:shortURL", (req, res) => {
   let loggeduserId = req.session["user_id"];
 
   if (!urlDatabase[req.params.shortURL]) {
-    console.log([req.params.shortURL]);
     res.redirect('/urls');
     return;
   }
   let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
-  console.log(urlDatabase[req.params.shortURL].userID);
 
   let templateVars = {
     user: users[loggeduserId],
@@ -125,6 +126,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let loggeduserId = req.session['user_id'];
   let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
   let shortURL = req.params.shortURL;
+  
   if (!isOwnerCreator) {
     res.status(400).send('Error: cannot delete another creator\'s URL');
     return;
@@ -146,11 +148,12 @@ app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const user = findUserByEmail(email, users);
+
   if (email === '' || password === '') {
     res.status(400).send('User data is invalid!');
     return;
   } else if (!user) {
-    const userID = addNewUser(email, users, password);
+    const userID = addNewUser(email, password, users);
     // Setting the cookie in the user's browser
     req.session['user_id'] = userID;
     res.redirect('/urls');
@@ -161,15 +164,13 @@ app.post('/register', (req, res) => {
 });
 
 // Display the login form
-
 app.get('/login', (req, res) => {
   let templateVars = {
     user: null
-    //user: users[req.session["user_id"]],
-    //urls: urlDatabase
   };
   res.render('urls_login', templateVars);
 });
+
 //logout form
 app.post('/logout', (req, res) => {
   // clear the cookie
@@ -182,6 +183,7 @@ app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const userID = authenticateUser(email, users, password);
+
   if (!findUserByEmail(email, users)) {
     res.status(403).send('Email is not registered');
     return;
