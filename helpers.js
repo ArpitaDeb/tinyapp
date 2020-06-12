@@ -1,3 +1,6 @@
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
 //handle Registration Errors by findUserByEmail function
 const findUserByEmail = (email, users) => {
   for (let userID in users) {
@@ -5,22 +8,6 @@ const findUserByEmail = (email, users) => {
       return users[userID];
     }
   } return false;
-};
-
-const bcrypt = require('bcrypt');
-const salt = 10;
-//users database
-const users = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: bcrypt.hashSync("purple-monkey-dinosaur", salt)
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: bcrypt.hashSync("dishwasher-funk", salt)
-  }
 };
 
 //function to generate shortURL
@@ -35,23 +22,26 @@ function generateRandomString() {
   return shortURL;
 };
 
-const addNewUser = (email, users, password) => {
-  const userID = generateRandomString();
-  const newUser = {
-    id: userID,
-    email,
-    password: bcrypt.hashSync(password, salt)
-  };
+const addNewUser = (email, password, users) => {
+  if (email && password && users) {
+    const userID = generateRandomString();
+    const hashedPassword = bcrypt.hashSync(password, saltRounds);
+    const newUser = {
+      id: userID,
+      email,
+      password: hashedPassword,
+    };
 
-  users[userID] = newUser;
-  return userID;
+    users[userID] = newUser;
+    return userID;
+  } else return undefined;
 };
 
 //User Authentication
-const authenticateUser = (email, users, password) => {
+const authenticateUser = (email, password, users) => {
   // loop through the users db => object
   const user = findUserByEmail(email, users);
-  if (user && bcrypt.compareSync(password, user.password)) {
+  if ((user && bcrypt.compareSync(password, user.password)) || (user && password === user.password)) {
     return user.id;
   }
   return false;

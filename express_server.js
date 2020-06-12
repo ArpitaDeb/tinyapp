@@ -4,8 +4,6 @@ const PORT = 8080; // default port 8080
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
-const bcrypt = require('bcrypt');
-const salt = 10;
 
 //Encrypted cookies
 const cookieSession = require('cookie-session');
@@ -18,7 +16,7 @@ const { findUserByEmail, addNewUser, authenticateUser, generateRandomString, url
 
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ49lW" }
 };
 
 //users database
@@ -26,12 +24,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: bcrypt.hashSync("purple-monkey-dinosaur", salt)
+    password: bcrypt.hashSync("purple-monkey-dinosaur", saltRounds)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: bcrypt.hashSync("dishwasher-funk", salt)
+    password: bcrypt.hashSync("dishwasher-funk", saltRounds)
   }
 };
 
@@ -48,9 +46,9 @@ app.get("/urls", (req, res) => {
   let templateVars = {
     user: users[loggeduserId],
     urls: urlsForUser(loggeduserId, urlDatabase)
-  }; 
+  };
   console.log('string1', templateVars.urls);
-  console.log('string2',urlDatabase);
+  console.log('string2', urlDatabase);
 
   res.render("urls_index", templateVars);
 });
@@ -121,8 +119,6 @@ app.post("/urls", (req, res) => {
   };
   res.redirect(`/urls/${shortURL}`);
 });
-
-//display the update form
 
 //delete an URL
 app.post("/urls/:shortURL/delete", (req, res) => {
