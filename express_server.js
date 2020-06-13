@@ -182,7 +182,7 @@ app.post('/logout', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userID = authenticateUser(email, users, password);
+  const userID = authenticateUser(email, password, users);
 
   if (!findUserByEmail(email, users)) {
     res.status(403).send('Email is not registered');
