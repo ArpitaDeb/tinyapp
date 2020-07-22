@@ -13,6 +13,12 @@ app.use(cookieSession({
   name: 'session',
   keys: ['f080ac7b-b838-4c5f-a1f4-b0a9fee10130', 'c3fb18be-448b-4f6e-a377-49373e9b7e1a']
 }))
+
+
+const methodOverride = require('method-override');
+
+app.use(methodOverride('_method'));
+
 app.set("view engine", "ejs");
 const { findUserByEmail,
   addNewUser,
@@ -21,8 +27,31 @@ const { findUserByEmail,
   urlsForUser } = require('./helpers.js');
 
 const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ49lW" }
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca", userID: "aJ48lW",
+    visitInfo: {
+      visitCount: 0,
+      visitors: [
+        {
+          date: new Date(),
+          userID: "aJ48lW"
+        }
+      ],
+    }
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca", userID: "aJ49lW",
+    visitInfo: {
+      visitCount: 0,
+      date: new Date(),
+      visitors: [
+        {
+          date: new Date(),
+          userID: "aJ48lW"
+        }
+      ],
+    }
+  }
 };
 
 //users database
@@ -40,11 +69,20 @@ const users = {
 };
 
 //Routes
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+//Routes at home page
+app.get("/", (req, res) => {
+  //res.send("Hello!");
+  // Redirect to login if not logged in
+  let loggeduserId = req.session["user_id"];
+  if (!loggeduserId) {
+    res.redirect('/login');
+    return;
+  }
+  //user is logged in: redirect to /urls
+  res.redirect('/urls');
 });
 //render list of all shortURL and associated long URL created by current user
 app.get("/urls", (req, res) => {
@@ -73,23 +111,46 @@ app.get("/urls/new", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
   let longURL = urlDatabase[shortURL].longURL;
+  let currentVisitCount = urlDatabase[shortURL].visitCount + 1;
+  let loggeduserId = req.session["user_id"];
+  
+    //console.log(urlDatabase[shortURL].visitors);
+    urlDatabase[shortURL].visitors.push({ date: new Date(), userID: loggeduserId });
+
+  urlDatabase[shortURL].visitCount = currentVisitCount;
   res.redirect(longURL);
 });
+
 //Render information about a single URL.
 app.get("/urls/:shortURL", (req, res) => {
   let loggeduserId = req.session["user_id"];
-
   if (!urlDatabase[req.params.shortURL]) {
     res.redirect('/urls');
     return;
   }
   let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
-
+  let uniqueVisit = 0;
+  let lastVisitor;
+  for (let visitor of urlDatabase[req.params.shortURL].visitors) {
+    if (!lastVisitor) {
+      lastVisitor = visitor;
+      uniqueVisit++;
+    } else {
+      if (lastVisitor.userID !== visitor.userID) {
+        lastVisitor = visitor;
+        uniqueVisit++;
+      }
+    }
+  }
   let templateVars = {
     user: users[loggeduserId],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    isOwnerCreator
+    isOwnerCreator,
+    visitCount: urlDatabase[req.params.shortURL].visitCount,
+    visitors: uniqueVisit, 
+    listOfVisitor: urlDatabase[req.params.shortURL].visitors
+
   };
   res.render("urls_show", templateVars);
 });
@@ -116,7 +177,9 @@ app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(req.body.longURL);
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userID: req.session['user_id']
+    userID: req.session['user_id'],
+    visitCount: 0,
+    visitors: []
   };
   res.redirect(`/urls/${shortURL}`);
 });
@@ -126,7 +189,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let loggeduserId = req.session['user_id'];
   let isOwnerCreator = urlDatabase[req.params.shortURL].userID === loggeduserId;
   let shortURL = req.params.shortURL;
-  
+
   if (!isOwnerCreator) {
     res.status(400).send('Error: cannot delete another creator\'s URL');
     return;

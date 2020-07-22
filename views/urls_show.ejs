@@ -34,6 +34,12 @@
       <div class="card-body">
         <h5 class="card-title">TinyURL for: <a href="#"><%= longURL %></a></h5>
         <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
+        <p class="card-text">visitCount: <%= visitCount %></p>
+        <p class="card-text">number of unique visitors: <%= visitors %></p>
+        <tr class="card-text">list of visitors: <% for (let visitor of listOfVisitor) { %>
+        <td class="card-text">Visisting Date<%= visitor.date %></td>
+        <td class="card-text">UserName<%= visitor.userID %></td>
+          <% } %></tr>
       </div>
       <div class="card-footer text-muted">
         <h3>Edit</h3>
